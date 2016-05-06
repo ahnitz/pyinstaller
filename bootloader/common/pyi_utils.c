@@ -544,12 +544,22 @@ static int set_dynamic_library_path(const char* path)
 
 #ifdef AIX
     /* LIBPATH is used to look up dynamic libraries on AIX. */
-    pyi_setenv("LIBPATH", path);
-    VS("LOADER: LIBPATH=%s\n", path);
+    setenv("LIBPATH", path, 1);
+    VS("%s\n", path);
 #else
     /* LD_LIBRARY_PATH is used on other *nix platforms (except Darwin). */
-    rc = pyi_setenv("LD_LIBRARY_PATH", path);
-    VS("LOADER: LD_LIBRARY_PATH=%s\n", path);
+    char * curpath = getenv("LD_LIBRARY_PATH");
+    if ( ! curpath ) { /* Use required path only */
+        rc = setenv("LD_LIBRARY_PATH", path, 1);
+        VS("%s\n", path);
+    } else { /* Append current path onto required path */
+        char apath[ strlen(path) + strlen(curpath) + 2 ];
+        strcpy(apath, path);
+        strcat(apath, ":");
+        strcat(apath, curpath);
+        rc = setenv("LD_LIBRARY_PATH", apath, 1);
+        VS("%s\n", apath);
+    }
 #endif /* AIX */
 
     return rc;
